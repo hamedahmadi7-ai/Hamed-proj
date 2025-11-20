@@ -20,6 +20,26 @@ const ENHANCEMENTS = [
     )
   },
   { 
+    label: "Upscale (300 DPI)", 
+    prompt: "Upscale this image to standard print resolution (300 DPI), improving sharpness suitable for high-quality printing.",
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="17 11 12 6 7 11"/>
+        <line x1="12" x2="12" y1="18" y2="6"/>
+      </svg>
+    )
+  },
+  { 
+    label: "Upscale (4K)", 
+    prompt: "Upscale this image to 4K Ultra HD resolution, maximizing clarity and fine details.",
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="17 11 12 6 7 11"/>
+        <line x1="12" x2="12" y1="18" y2="6"/>
+      </svg>
+    )
+  },
+  { 
     label: "Fix Lighting", 
     prompt: "Fix lighting, balance exposure, and enhance colors for a natural, vibrant look.",
     icon: (
@@ -78,7 +98,26 @@ const PromptInput: React.FC<PromptInputProps> = ({ prompt, setPrompt, onGenerate
     else if (clampedValue > 75) intensityDesc = "extreme";
     else if (clampedValue > 50) intensityDesc = "high";
 
-    setPrompt(`Sharpen the image with ${intensityDesc} intensity (${clampedValue}%). Enhance fine details and edge contrast for a crisp, clear look.`);
+    // Construct the sentence
+    const newSentence = `Sharpen the image with ${intensityDesc} intensity (${clampedValue}%). Enhance fine details and edge contrast for a crisp, clear look.`;
+    
+    // Regex to match existing sharpness command (flexible with potential user edits to description)
+    const regex = /Sharpen the image with .*? intensity \(\d+%\)\. Enhance fine details and edge contrast for a crisp, clear look\.?/g;
+
+    const currentPrompt = prompt || "";
+    let newPrompt = currentPrompt;
+
+    if (currentPrompt.match(regex)) {
+      // Replace existing
+      newPrompt = currentPrompt.replace(regex, newSentence);
+    } else {
+      // Append if not found
+      // Ensure proper spacing
+      const separator = currentPrompt.trim().length > 0 && !currentPrompt.trim().endsWith('.') ? '. ' : ' ';
+      newPrompt = (currentPrompt.trim() + separator + newSentence).trim();
+    }
+    
+    setPrompt(newPrompt);
   };
 
   const updateNoiseLevel = (value: number) => {
@@ -90,7 +129,20 @@ const PromptInput: React.FC<PromptInputProps> = ({ prompt, setPrompt, onGenerate
     else if (clampedValue > 75) intensityDesc = "strong";
     else if (clampedValue > 50) intensityDesc = "high";
 
-    setPrompt(`Reduce image noise with ${intensityDesc} intensity (${clampedValue}%). Smooth out grain and digital artifacts while preserving main details and textures.`);
+    const newSentence = `Reduce image noise with ${intensityDesc} intensity (${clampedValue}%). Smooth out grain and digital artifacts while preserving main details and textures.`;
+    const regex = /Reduce image noise with .*? intensity \(\d+%\)\. Smooth out grain and digital artifacts while preserving main details and textures\.?/g;
+
+    const currentPrompt = prompt || "";
+    let newPrompt = currentPrompt;
+
+    if (currentPrompt.match(regex)) {
+      newPrompt = currentPrompt.replace(regex, newSentence);
+    } else {
+      const separator = currentPrompt.trim().length > 0 && !currentPrompt.trim().endsWith('.') ? '. ' : ' ';
+      newPrompt = (currentPrompt.trim() + separator + newSentence).trim();
+    }
+
+    setPrompt(newPrompt);
   };
 
   return (
@@ -109,6 +161,7 @@ const PromptInput: React.FC<PromptInputProps> = ({ prompt, setPrompt, onGenerate
         />
         <div className="absolute bottom-3 right-3">
           <button
+            type="button"
             onClick={onGenerate}
             disabled={disabled || isLoading || !prompt.trim()}
             className={`
@@ -143,7 +196,7 @@ const PromptInput: React.FC<PromptInputProps> = ({ prompt, setPrompt, onGenerate
       </div>
 
       {/* Fine Tuning Sliders */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${disabled || isLoading ? 'opacity-50 pointer-events-none' : ''}`}>
         {/* Sharpness Slider */}
         <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
           <div className="flex justify-between items-center mb-4">
@@ -156,6 +209,7 @@ const PromptInput: React.FC<PromptInputProps> = ({ prompt, setPrompt, onGenerate
                   type="number"
                   min="0"
                   max="100"
+                  disabled={disabled || isLoading}
                   value={sharpness}
                   onChange={(e) => updateSharpness(parseInt(e.target.value) || 0)}
                   className="w-14 bg-slate-900 text-purple-400 px-2 py-1 rounded border border-slate-700 shadow-sm text-xs font-mono text-center focus:outline-none focus:border-purple-500 transition-colors"
@@ -171,7 +225,7 @@ const PromptInput: React.FC<PromptInputProps> = ({ prompt, setPrompt, onGenerate
               step="1"
               value={sharpness}
               onChange={(e) => updateSharpness(parseInt(e.target.value))}
-              disabled={isLoading}
+              disabled={disabled || isLoading}
               className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-purple-500 hover:accent-purple-400 transition-all focus:outline-none focus:ring-2 focus:ring-purple-500/50"
             />
           </div>
@@ -196,6 +250,7 @@ const PromptInput: React.FC<PromptInputProps> = ({ prompt, setPrompt, onGenerate
                   type="number"
                   min="0"
                   max="100"
+                  disabled={disabled || isLoading}
                   value={noiseLevel}
                   onChange={(e) => updateNoiseLevel(parseInt(e.target.value) || 0)}
                   className="w-14 bg-slate-900 text-cyan-400 px-2 py-1 rounded border border-slate-700 shadow-sm text-xs font-mono text-center focus:outline-none focus:border-cyan-500 transition-colors"
@@ -211,7 +266,7 @@ const PromptInput: React.FC<PromptInputProps> = ({ prompt, setPrompt, onGenerate
               step="1"
               value={noiseLevel}
               onChange={(e) => updateNoiseLevel(parseInt(e.target.value))}
-              disabled={isLoading}
+              disabled={disabled || isLoading}
               className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500 hover:accent-cyan-400 transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
             />
           </div>
@@ -229,15 +284,21 @@ const PromptInput: React.FC<PromptInputProps> = ({ prompt, setPrompt, onGenerate
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>
           Quick Actions
         </p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
           {ENHANCEMENTS.map((item, idx) => (
             <button
+              type="button"
               key={idx}
               onClick={() => setPrompt(item.prompt)}
-              disabled={isLoading}
-              className="text-xs font-medium px-3 py-2.5 rounded-lg bg-slate-800/50 border border-slate-700 text-slate-300 hover:bg-indigo-500/10 hover:border-indigo-500/50 hover:text-indigo-300 transition-all flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-2 text-center sm:text-left group"
+              disabled={disabled || isLoading}
+              className={`text-xs font-medium px-3 py-2.5 rounded-lg border transition-all flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-2 text-center sm:text-left group
+                ${disabled || isLoading 
+                  ? 'bg-slate-800/30 border-slate-800 text-slate-600 cursor-not-allowed' 
+                  : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-indigo-500/10 hover:border-indigo-500/50 hover:text-indigo-300 cursor-pointer'
+                }
+              `}
             >
-              {item.icon && <span className="text-indigo-400 group-hover:text-indigo-300 transition-colors">{item.icon}</span>}
+              {item.icon && <span className={disabled || isLoading ? 'text-slate-600' : 'text-indigo-400 group-hover:text-indigo-300 transition-colors'}>{item.icon}</span>}
               {item.label}
             </button>
           ))}
@@ -253,10 +314,16 @@ const PromptInput: React.FC<PromptInputProps> = ({ prompt, setPrompt, onGenerate
         <div className="flex flex-wrap gap-2">
           {STYLES.map((item, idx) => (
             <button
+              type="button"
               key={idx}
               onClick={() => setPrompt(item.prompt)}
-              disabled={isLoading}
-              className="text-xs font-medium px-3 py-1.5 rounded-full bg-slate-800 border border-slate-700 text-slate-400 hover:bg-purple-500/20 hover:border-purple-500/50 hover:text-purple-300 transition-all"
+              disabled={disabled || isLoading}
+              className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-all
+                ${disabled || isLoading 
+                  ? 'bg-slate-800/30 border-slate-800 text-slate-600 cursor-not-allowed' 
+                  : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-purple-500/20 hover:border-purple-500/50 hover:text-purple-300 cursor-pointer'
+                }
+              `}
             >
               {item.label}
             </button>
